@@ -3,7 +3,43 @@ use std::{
     str::FromStr,
 };
 
-use crate::app::SongsSource;
+
+/// A set of image URLs at different sizes from Spotify.
+/// Consumers call `best_for_width` to pick the most appropriate size.
+#[derive(Clone, Debug, Default)]
+pub struct ImageSet {
+    images: Vec<(u32, String)>, // (width, url) sorted by width ascending
+}
+
+impl ImageSet {
+    pub fn from_images(images: impl IntoIterator<Item = (Option<u32>, String)>) -> Option<Self> {
+        let mut imgs: Vec<(u32, String)> = images
+            .into_iter()
+            .filter(|(_, url)| !url.is_empty())
+            .map(|(w, url)| (w.unwrap_or(0), url))
+            .collect();
+        if imgs.is_empty() {
+            return None;
+        }
+        imgs.sort_by_key(|(w, _)| *w);
+        Some(Self { images: imgs })
+    }
+
+    /// Pick the image URL closest to (but preferring >=) the given width.
+    pub fn best_for_width(&self, width: u32) -> Option<&str> {
+        // Find the smallest image that is >= width
+        self.images
+            .iter()
+            .find(|(w, _)| *w >= width)
+            .or_else(|| self.images.last()) // fallback to largest
+            .map(|(_, url)| url.as_str())
+    }
+
+    /// Get the largest available image URL.
+    pub fn largest(&self) -> Option<&str> {
+        self.images.last().map(|(_, url)| url.as_str())
+    }
+}
 
 // A batch of whatever
 #[derive(Clone, Copy, Debug)]
@@ -73,7 +109,7 @@ pub struct AlbumDescription {
     pub title: String,
     pub artists: Vec<ArtistRef>,
     pub release_date: Option<String>,
-    pub art: Option<String>,
+    pub art: Option<ImageSet>,
     pub songs: SongBatch,
     pub is_liked: bool,
 }
@@ -112,7 +148,7 @@ pub struct AlbumReleaseDetails {
 pub struct PlaylistDescription {
     pub id: String,
     pub title: String,
-    pub art: Option<String>,
+    pub art: Option<ImageSet>,
     pub songs: SongBatch,
     pub owner: UserRef,
 }
@@ -147,7 +183,7 @@ pub struct SongDescription {
     pub artists: Vec<ArtistRef>,
     pub album: AlbumRef,
     pub duration: u32,
-    pub art: Option<String>,
+    pub art: Option<ImageSet>,
 }
 
 impl SongDescription {
@@ -228,21 +264,24 @@ impl SongBatch {
 pub struct ArtistDescription {
     pub id: String,
     pub name: String,
+    pub photo: Option<ImageSet>,
     pub albums: Vec<AlbumDescription>,
     pub top_tracks: Vec<SongDescription>,
+    pub is_followed: bool,
 }
 
 #[derive(Clone, Debug)]
 pub struct ArtistSummary {
     pub id: String,
     pub name: String,
-    pub photo: Option<String>,
+    pub photo: Option<ImageSet>,
 }
 
 #[derive(Clone, Debug)]
 pub struct UserDescription {
     pub id: String,
     pub name: String,
+    pub photo: Option<ImageSet>,
     pub playlists: Vec<PlaylistDescription>,
 }
 
@@ -256,8 +295,6 @@ pub enum RepeatMode {
 #[derive(Clone, Debug)]
 pub struct ConnectPlayerState {
     pub is_playing: bool,
-    #[allow(dead_code)]
-    pub source: Option<SongsSource>,
     pub current_song_id: Option<String>,
     pub progress_ms: u32,
     pub repeat: RepeatMode,
@@ -268,7 +305,6 @@ impl Default for ConnectPlayerState {
     fn default() -> Self {
         Self {
             is_playing: false,
-            source: None,
             current_song_id: None,
             progress_ms: 0,
             repeat: RepeatMode::None,

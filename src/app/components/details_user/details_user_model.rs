@@ -1,0 +1,126 @@
+use std::ops::Deref;
+use std::rc::Rc;
+
+use crate::app::components::{CardListModel, HeaderBarModel, ImageShape, SimpleHeaderBarModel, SimpleHeaderBarModelWrapper};
+use crate::app::models::*;
+use crate::app::state::{BrowserAction, BrowserEvent, SelectionContext};
+use crate::app::{ActionDispatcher, AppAction, AppEvent, AppModel, ListStore, PaginationTarget};
+
+pub struct UserDetailsModel {
+    pub id: String,
+    app_model: Rc<AppModel>,
+    dispatcher: Box<dyn ActionDispatcher>,
+}
+
+impl UserDetailsModel {
+    pub fn new(id: String, app_model: Rc<AppModel>, dispatcher: Box<dyn ActionDispatcher>) -> Self {
+        Self {
+            id,
+            app_model,
+            dispatcher,
+        }
+    }
+    pub fn get_user_name(&self) -> Option<impl Deref<Target = String> + '_> {
+        self.app_model
+            .map_state_opt(|s| s.browser.user_state(&self.id)?.user.as_ref())
+    }
+
+    pub fn get_user_photo(&self) -> Option<impl Deref<Target = ImageSet> + '_> {
+        self.app_model
+            .map_state_opt(|s| s.browser.user_state(&self.id)?.photo.as_ref())
+    }
+
+    pub fn get_list_store(&self) -> Option<impl Deref<Target = ListStore<CardModel>> + '_> {
+        self.app_model
+            .map_state_opt(|s| Some(&s.browser.user_state(&self.id)?.playlists))
+    }
+
+    pub fn load_user_details(&self, id: String) {
+        let api = self.app_model.get_spotify();
+        self.dispatcher
+            .call_spotify_and_dispatch(move || async move {
+                api.get_user(&id)
+                    .await
+                    .map(|user| BrowserAction::SetUserDetails(Box::new(user)).into())
+            });
+    }
+
+    pub fn open_playlist(&self, id: String) {
+        self.dispatcher.dispatch(AppAction::ViewPlaylist(id));
+    }
+
+    pub fn load_more(&self) -> Option<()> {
+        let api = self.app_model.get_spotify();
+
+        let state = self.app_model.get_state();
+        let next_page = state.browser.user_state(&self.id)?.next_page.clone();
+        drop(state);
+
+        let id = next_page.data;
+        let batch_size = next_page.batch_size;
+        let offset = next_page.next_offset?;
+
+        self.app_model
+            .update_state(BrowserAction::ConsumeNextPage(PaginationTarget::UserPlaylists(id.clone())).into());
+
+        self.dispatcher
+            .call_spotify_and_dispatch(move || async move {
+                api.get_user_playlists(&id, offset, batch_size)
+                    .await
+                    .map(|playlists| BrowserAction::AppendUserPlaylists(id, playlists).into())
+            });
+
+        Some(())
+    }
+
+    pub fn to_headerbar_model(self: &Rc<Self>) -> Rc<impl HeaderBarModel> {
+        Rc::new(SimpleHeaderBarModelWrapper::new(
+            self.clone(),
+            self.app_model.clone(),
+            self.dispatcher.box_clone(),
+        ))
+    }
+}
+
+impl CardListModel for UserDetailsModel {
+    fn get_store(&self) -> Option<impl Deref<Target = ListStore<CardModel>> + '_> {
+        self.get_list_store()
+    }
+
+    fn load_more(&self) {
+        let _ = UserDetailsModel::load_more(self);
+    }
+
+    fn refresh(&self) {}
+
+    fn has_items(&self) -> bool {
+        self.get_list_store().map(|s| s.len() > 0).unwrap_or(false)
+    }
+
+    fn open_item(&self, id: String) {
+        self.open_playlist(id);
+    }
+
+    fn image_shape(&self) -> ImageShape {
+        ImageShape::Square
+    }
+}
+
+impl SimpleHeaderBarModel for UserDetailsModel {
+    fn title(&self) -> Option<String> {
+        Some(format!("Profile \u{2014} {}", &*self.get_user_name()?))
+    }
+
+    fn title_updated(&self, event: &AppEvent) -> bool {
+        matches!(
+            event,
+            AppEvent::BrowserEvent(BrowserEvent::UserDetailsUpdated(_))
+        )
+    }
+
+    fn selection_context(&self) -> Option<SelectionContext> {
+        None
+    }
+
+    fn select_all(&self) {}
+}

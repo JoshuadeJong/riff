@@ -18,30 +18,20 @@ src/main.rs
 
 # find src -name "*.blp" -print
 src/window.blp
-src/app/components/saved_playlists/saved_playlists.blp
-src/app/components/artist_details/artist_details.blp
-src/app/components/saved_tracks/saved_tracks.blp
 src/app/components/search/search.blp
 src/app/components/settings/settings.blp
-src/app/components/artist/artist.blp
-src/app/components/user_details/user_details.blp
 src/app/components/selection/selection_toolbar.blp
 src/app/components/scrolling_header/scrolling_header.blp
-src/app/components/details/album_header.blp
-src/app/components/details/release_details.blp
-src/app/components/details/details.blp
-src/app/components/now_playing/now_playing.blp
+src/app/components/details_album/album_header.blp
+src/app/components/details_album/release_details.blp
 src/app/components/login/login.blp
-src/app/components/playlist_details/playlist_details.blp
-src/app/components/playlist_details/playlist_header.blp
-src/app/components/playlist_details/playlist_headerbar.blp
+src/app/components/details_playlist/playlist_header.blp
+src/app/components/details_playlist/playlist_headerbar.blp
 src/app/components/headerbar/headerbar.blp
 src/app/components/device_selector/device_selector.blp
 src/app/components/sidebar/create_playlist.blp
 src/app/components/sidebar/sidebar_row.blp
-src/app/components/album/album.blp
 src/app/components/playlist/song.blp
 src/app/components/playback/playback_widget.blp
 src/app/components/playback/playback_info.blp
 src/app/components/playback/playback_controls.blp
-src/app/components/library/library.blp

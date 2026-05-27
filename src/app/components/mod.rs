@@ -31,30 +31,34 @@ pub use settings::*;
 mod player_notifier;
 pub use player_notifier::PlayerNotifier;
 
-mod library;
-pub use library::*;
+mod saved_items;
+pub use saved_items::*;
 
-mod details;
-pub use details::*;
+mod details_album;
+pub use details_album::*;
 
 mod search;
 pub use search::*;
 
-mod album;
-use album::*;
+mod card;
+pub use card::*;
 
-mod artist;
-use artist::*;
+mod card_list;
+pub use card_list::*;
 
-mod artist_details;
-pub use artist_details::*;
+mod details_page;
+pub use details_page::*;
 
-mod user_details;
-pub use user_details::*;
+mod details_artist;
+pub use details_artist::*;
+
+mod details_user;
+pub use details_user::*;
 
 mod now_playing;
 pub use now_playing::*;
 
+#[allow(dead_code)]
 mod device_selector;
 pub use device_selector::*;
 
@@ -67,14 +71,9 @@ pub use user_menu::*;
 mod notification;
 pub use notification::*;
 
-mod saved_playlists;
-pub use saved_playlists::*;
 
-mod saved_artists;
-pub use saved_artists::*;
-
-mod playlist_details;
-pub use playlist_details::*;
+mod details_playlist;
+pub use details_playlist::*;
 
 mod window;
 pub use window::*;
@@ -100,8 +99,10 @@ pub fn expose_custom_widgets() {
     selection::expose_widgets();
     headerbar::expose_widgets();
     device_selector::expose_widgets();
-    playlist_details::expose_widgets();
     scrolling_header::expose_widgets();
+    details_page::expose_widgets();
+    details_artist::expose_widgets();
+    details_user::expose_widgets();
 }
 
 impl dyn ActionDispatcher {

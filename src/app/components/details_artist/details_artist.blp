@@ -1,0 +1,28 @@
+using Gtk 4.0;
+
+template $ArtistDetailsContentWidget : Box {
+  orientation: vertical;
+  spacing: 8;
+
+  Label top_tracks_label {
+    halign: start;
+    label: _("Top tracks");
+
+    styles [
+      "title-4",
+    ]
+  }
+
+  ListView top_tracks {
+    margin-top: 12;
+  }
+
+  Label releases_label {
+    halign: start;
+    label: _("Releases");
+
+    styles [
+      "title-4",
+    ]
+  }
+}

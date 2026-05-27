@@ -3,11 +3,12 @@ use gio::SimpleActionGroup;
 use std::ops::Deref;
 use std::rc::Rc;
 
-use crate::app::components::{labels, PlaylistModel};
+use crate::app::components::{labels, HeaderBarModel, PlaylistModel, SimpleHeaderBarModel, SimpleHeaderBarModelWrapper};
 use crate::app::models::*;
 use crate::app::state::SelectionContext;
 use crate::app::state::{PlaybackAction, SelectionAction, SelectionState};
-use crate::app::{ActionDispatcher, AppAction, AppModel, BatchQuery, BrowserAction, PaginationTarget, SongsSource};
+use crate::app::{ActionDispatcher, AppAction, AppEvent, AppModel, BatchQuery, BrowserAction, PaginationTarget, SongsSource};
+use crate::feature_flags::{self, FeatureFlag};
 
 pub struct SavedTracksModel {
     app_model: Rc<AppModel>,
@@ -58,6 +59,61 @@ impl SavedTracksModel {
             });
 
         Some(())
+    }
+
+    pub fn saved_tracks_is_playing(&self) -> bool {
+        matches!(
+            self.app_model.get_state().playback.current_source(),
+            Some(SongsSource::SavedTracks)
+        )
+    }
+
+    pub fn toggle_play_saved_tracks(&self) {
+        if !self.saved_tracks_is_playing() {
+            if self.app_model.get_state().playback.is_shuffled() {
+                self.dispatcher
+                    .dispatch(PlaybackAction::ToggleShuffle.into());
+            }
+            let first_song = self.song_list_model().index(0);
+            if let Some(first_song) = first_song {
+                self.play_song_at(0, &first_song.get_id());
+            }
+        } else if self.app_model.get_state().playback.is_playing() {
+            self.dispatcher.dispatch(PlaybackAction::Pause.into());
+        } else {
+            self.dispatcher.dispatch(PlaybackAction::Play.into());
+        }
+    }
+
+    pub fn to_headerbar_model(self: &Rc<Self>) -> Rc<impl HeaderBarModel> {
+        Rc::new(SimpleHeaderBarModelWrapper::new(
+            self.clone(),
+            self.app_model.clone(),
+            self.dispatcher.box_clone(),
+        ))
+    }
+}
+
+impl SimpleHeaderBarModel for SavedTracksModel {
+    fn title(&self) -> Option<String> {
+        Some("All Tracks".to_string())
+    }
+
+    fn title_updated(&self, _: &AppEvent) -> bool {
+        false
+    }
+
+    fn selection_context(&self) -> Option<SelectionContext> {
+        if !feature_flags::is_enabled(FeatureFlag::SelectMode) {
+            return None;
+        }
+        Some(SelectionContext::SavedTracks)
+    }
+
+    fn select_all(&self) {
+        let songs: Vec<SongDescription> = self.song_list_model().collect();
+        self.dispatcher
+            .dispatch(SelectionAction::Select(songs).into());
     }
 }
 
@@ -141,6 +197,9 @@ impl PlaylistModel for SavedTracksModel {
     }
 
     fn enable_selection(&self) -> bool {
+        if !feature_flags::is_enabled(FeatureFlag::SelectMode) {
+            return false;
+        }
         self.dispatcher
             .dispatch(AppAction::EnableSelection(SelectionContext::SavedTracks));
         true

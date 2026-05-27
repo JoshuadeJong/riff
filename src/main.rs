@@ -124,6 +124,16 @@ fn setup_gtk(settings: &settings::RiffSettings) {
         &provider,
         gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
     );
+
+    if cfg!(debug_assertions) {
+        let debug_provider = gtk::CssProvider::new();
+        debug_provider.load_from_resource("/dev/diegovsky/Riff/debug.css");
+        gtk::style_context_add_provider_for_display(
+            &gdk::Display::default().unwrap(),
+            &debug_provider,
+            gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
+        );
+    }
 }
 
 fn setup_credits(about: libadwaita::AboutDialog) {

@@ -54,6 +54,18 @@ glib::wrapper! {
 }
 
 impl ScrollingHeaderWidget {
+    pub fn new() -> Self {
+        glib::Object::new()
+    }
+
+    pub fn revealer(&self) -> &gtk::Revealer {
+        &self.imp().revealer
+    }
+
+    pub fn scrolled_window(&self) -> &gtk::ScrolledWindow {
+        &self.imp().scrolled_window
+    }
+
     fn set_header_visible(&self, visible: bool) -> bool {
         let widget = self.imp();
         let is_up_to_date = widget.revealer.reveals_child() == visible;

@@ -1,118 +1,82 @@
+use gettextrs::ngettext;
 use gtk::prelude::*;
-use gtk::subclass::prelude::*;
-use gtk::CompositeTemplate;
 use std::rc::Rc;
 
 use super::SavedTracksModel;
-use crate::app::components::{Component, EventListener, Playlist};
-use crate::app::state::LoginEvent;
-use crate::app::{AppEvent, Worker};
-use libadwaita::subclass::prelude::BinImpl;
-
-mod imp {
-
-    use super::*;
-
-    #[derive(Debug, Default, CompositeTemplate)]
-    #[template(resource = "/dev/diegovsky/Riff/components/saved_tracks.ui")]
-    pub struct SavedTracksWidget {
-        #[template_child]
-        pub song_list: TemplateChild<gtk::ListView>,
-
-        #[template_child]
-        pub scrolled_window: TemplateChild<gtk::ScrolledWindow>,
-    }
-
-    #[glib::object_subclass]
-    impl ObjectSubclass for SavedTracksWidget {
-        const NAME: &'static str = "SavedTracksWidget";
-        type Type = super::SavedTracksWidget;
-        type ParentType = libadwaita::Bin;
-
-        fn class_init(klass: &mut Self::Class) {
-            klass.bind_template();
-        }
-
-        fn instance_init(obj: &glib::subclass::InitializingObject<Self>) {
-            obj.init_template();
-        }
-    }
-
-    impl ObjectImpl for SavedTracksWidget {}
-    impl WidgetImpl for SavedTracksWidget {}
-    impl BinImpl for SavedTracksWidget {}
-}
-
-glib::wrapper! {
-    pub struct SavedTracksWidget(ObjectSubclass<imp::SavedTracksWidget>) @extends gtk::Widget, libadwaita::Bin;
-}
-
-impl SavedTracksWidget {
-    fn new() -> Self {
-        glib::Object::new()
-    }
-
-    fn connect_bottom_edge<F>(&self, f: F)
-    where
-        F: Fn() + 'static,
-    {
-        self.imp()
-            .scrolled_window
-            .connect_edge_reached(move |_, pos| {
-                if let gtk::PositionType::Bottom = pos {
-                    f()
-                }
-            });
-    }
-
-    fn song_list_widget(&self) -> &gtk::ListView {
-        self.imp().song_list.as_ref()
-    }
-}
+use crate::app::components::{
+    Component, DetailsPage, EventListener, HeaderImageShape, Playlist, PlaylistModel, sync_play_button,
+};
+use crate::app::state::{LoginEvent, PlaybackEvent};
+use crate::app::{AppEvent, BrowserEvent, Worker};
+use crate::impl_details_component;
 
 pub struct SavedTracks {
-    widget: SavedTracksWidget,
     model: Rc<SavedTracksModel>,
+    page: DetailsPage,
     children: Vec<Box<dyn EventListener>>,
 }
 
 impl SavedTracks {
     pub fn new(model: Rc<SavedTracksModel>, worker: Worker) -> Self {
-        let widget = SavedTracksWidget::new();
+        let tracks = gtk::ListView::new(None::<gtk::NoSelection>, None::<gtk::ListItemFactory>);
+        let content = gtk::Box::new(gtk::Orientation::Vertical, 0);
+        content.append(&tracks);
 
-        widget.connect_bottom_edge(clone!(
+        let page = DetailsPage::new(HeaderImageShape::Square, &content);
+        page.set_loaded();
+        page.set_details("All Tracks", "");
+        page.header().set_subtitle_visible(true);
+        page.header().set_default_icon("emote-love-symbolic");
+
+        page.header().connect_play(clone!(
             #[weak]
             model,
-            move || {
-                model.load_more();
-            }
+            move || model.toggle_play_saved_tracks()
         ));
 
-        let playlist = Playlist::new(widget.song_list_widget().clone(), model.clone(), worker);
+        page.connect_bottom_edge(clone!(
+            #[weak]
+            model,
+            move || { model.load_more(); }
+        ));
+
+        let playlist = Box::new(Playlist::new(tracks, model.clone(), worker));
+        let headerbar = page.create_headerbar_listener(model.to_headerbar_model());
 
         Self {
-            widget,
             model,
-            children: vec![Box::new(playlist)],
+            page,
+            children: vec![playlist, headerbar],
         }
     }
-}
 
-impl Component for SavedTracks {
-    fn get_root_widget(&self) -> &gtk::Widget {
-        self.widget.upcast_ref()
+    fn update_track_count(&self) {
+        let count = self.model.song_list_model().len();
+        let subtitle = ngettext!("{} Track", "{} Tracks", count as u32, count);
+        self.page.header().set_subtitle(&subtitle);
     }
 
-    fn get_children(&mut self) -> Option<&mut Vec<Box<dyn EventListener>>> {
-        Some(&mut self.children)
+    fn update_playing(&self, is_playing: bool) {
+        sync_play_button(&self.page, self.model.saved_tracks_is_playing(), is_playing);
     }
 }
+
+impl_details_component!(SavedTracks);
 
 impl EventListener for SavedTracks {
     fn on_event(&mut self, event: &AppEvent) {
         match event {
             AppEvent::LoginEvent(LoginEvent::LoginCompleted) => {
                 self.model.load_initial();
+            }
+            AppEvent::BrowserEvent(BrowserEvent::SavedTracksUpdated) => {
+                self.update_track_count();
+            }
+            AppEvent::PlaybackEvent(PlaybackEvent::PlaybackPaused) => {
+                self.update_playing(false);
+            }
+            AppEvent::PlaybackEvent(PlaybackEvent::PlaybackResumed) => {
+                self.update_playing(true);
             }
             _ => {}
         }

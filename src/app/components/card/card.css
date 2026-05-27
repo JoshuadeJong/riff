@@ -1,0 +1,77 @@
+@keyframes skeleton-pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1.0; }
+  100% { opacity: 0.6; }
+}
+
+/* Skeleton state (before loaded) */
+.container:not(.container--loaded) .card {
+  background-color: alpha(@card_shade_color, 0.8);
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.container:not(.container--loaded) .title-4,
+.container:not(.container--loaded) .body {
+  background-color: alpha(@card_shade_color, 0.8);
+  color: transparent;
+  border-radius: 4px;
+  min-width: 80px;
+  min-height: 16px;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+/* Max card height */
+.container {
+  max-height: 300px;
+  overflow: hidden;
+  padding: 6px;
+}
+
+/* Size variants */
+navigation-split-view .card--square .card,
+navigation-split-view .card--round .card {
+  min-width: 200px;
+  min-height: 200px;
+}
+
+navigation-split-view .card--square {
+  max-width: 216px;
+}
+
+navigation-split-view .card--round {
+  max-width: 216px;
+}
+
+navigation-split-view .card--square .card {
+  border-radius: 6px;
+}
+
+navigation-split-view .card--round .card {
+  border-radius: 50%;
+}
+
+navigation-split-view.collapsed .card--square .card,
+navigation-split-view.collapsed .card--round .card {
+  min-width: 100px;
+  min-height: 100px;
+}
+
+navigation-split-view.collapsed .card--square,
+navigation-split-view.collapsed .card--round {
+  max-width: 116px;
+}
+
+/* Loaded state removes skeleton */
+.container--loaded .card {
+  animation: none;
+  background-color: transparent;
+}
+
+.container--loaded .title-4,
+.container--loaded .body {
+  animation: none;
+  background-color: transparent;
+  color: inherit;
+  min-width: unset;
+  min-height: unset;
+}

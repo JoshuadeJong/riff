@@ -1,0 +1,62 @@
+/* === DEBUG: Alignment visualization === */
+/* This file is only loaded in debug builds. */
+
+.details-header-clamp > * {
+  background-color: red;
+}
+
+.details-content-clamp > * {
+  background-color: green;
+}
+
+/* details-header (outermost box) - red family */
+.details-header {
+  background-color: rgba(255, 0, 0, 0.15);
+  border: 2px solid rgba(255, 0, 0, 0.5);
+}
+
+/* BreakpointBin inner box - orange */
+.details-header > breakpointbin > box {
+  background-color: rgba(255, 140, 0, 0.15);
+  border: 2px solid rgba(255, 140, 0, 0.5);
+}
+
+/* image_box - blue family */
+.details-header > breakpointbin > box > box:first-child {
+  background-color: rgba(0, 100, 255, 0.2);
+  border: 2px solid rgba(0, 100, 255, 0.6);
+}
+
+/* info_box - purple family */
+.details-header > breakpointbin > box > box:nth-child(2) {
+  background-color: rgba(150, 0, 255, 0.15);
+  border: 2px solid rgba(150, 0, 255, 0.5);
+}
+
+/* title_entry - yellow */
+.details-header__title {
+  background-color: rgba(255, 255, 0, 0.3);
+  border: 2px solid rgba(200, 200, 0, 0.7);
+}
+
+/* subtitle_label - cyan */
+.details-header .title-4 {
+  background-color: rgba(0, 255, 255, 0.3);
+  border: 2px solid rgba(0, 200, 200, 0.7);
+}
+
+/* button_box - teal */
+.details-header > breakpointbin > box > box:nth-child(2) > box {
+  background-color: rgba(0, 180, 180, 0.2);
+  border: 2px solid rgba(0, 180, 180, 0.6);
+}
+
+/* header_clamp - dark red border */
+.details-header-clamp {
+  border: 3px dashed rgba(200, 0, 0, 0.6);
+}
+
+/* content_clamp - dark green border */
+.details-content-clamp {
+  border: 3px dashed rgba(0, 150, 0, 0.6);
+}

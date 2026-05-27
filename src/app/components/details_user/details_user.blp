@@ -1,0 +1,14 @@
+using Gtk 4.0;
+
+template $UserDetailsContentWidget : Box {
+  orientation: vertical;
+
+  Label playlists_label {
+    halign: start;
+    label: _("Public Playlists");
+
+    styles [
+      "title-4",
+    ]
+  }
+}

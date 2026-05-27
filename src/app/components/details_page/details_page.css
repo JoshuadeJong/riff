@@ -1,0 +1,181 @@
+/* Shared details page styles */
+
+@keyframes skeleton-pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1.0; }
+  100% { opacity: 0.6; }
+}
+
+/* Override global opacity:0 so skeleton is visible while loading */
+.container.details-page {
+  opacity: 1;
+  margin-top: 2px;
+  margin-bottom: 2px;
+}
+
+.details-header-clamp {
+  margin-top: 24px;
+  margin-bottom: 24px;
+  padding-left: 24px;
+  padding-right:24px;
+}
+
+.details-content-clamp {
+  padding-left: 24px;
+  padding-right: 24px;
+  margin-bottom: 24px;
+}
+
+/* === Header skeleton (before container--loaded) === */
+
+.container:not(.container--loaded) .details-header__image-placeholder {
+  min-width: 200px;
+  min-height: 200px;
+  background-color: alpha(@card_shade_color, 0.8);
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.container:not(.container--loaded) .details-header__title {
+  background-color: alpha(@card_shade_color, 0.8);
+  color: transparent;
+  border-radius: 4px;
+  min-width: 350px;
+  min-height: 28px;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.container:not(.container--loaded) .details-header .body {
+  background-color: alpha(@card_shade_color, 0.8);
+  color: transparent;
+  border-radius: 4px;
+  min-width: 250px;
+  min-height: 20px;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.container:not(.container--loaded) .details-header .caption {
+  background-color: alpha(@card_shade_color, 0.8);
+  color: transparent;
+  border-radius: 4px;
+  min-width: 100px;
+  min-height: 14px;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.container:not(.container--loaded) .details-header .circular {
+  background-color: alpha(@card_shade_color, 0.8);
+  color: transparent;
+  opacity: 1;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.container:not(.container--loaded) .details-header .circular:not(.play__button):not(.like__button) {
+  opacity: 0;
+}
+
+/* === Body skeleton (before container--loaded) === */
+
+.container:not(.container--loaded) .details-content-clamp listview {
+  background-color: alpha(@card_shade_color, 0.8);
+  border-radius: 8px;
+  min-height: 400px;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.container:not(.container--loaded) .details-content-clamp flowbox {
+  background-color: alpha(@card_shade_color, 0.8);
+  border-radius: 8px;
+  min-height: 400px;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+/* === Loaded state clears skeletons === */
+
+.container--loaded .details-header__title {
+  animation: none;
+  background-color: transparent;
+  color: inherit;
+  min-width: unset;
+  min-height: unset;
+}
+
+.container--loaded .details-header .body {
+  animation: none;
+  background-color: transparent;
+  color: inherit;
+  min-width: unset;
+  min-height: unset;
+}
+
+.container--loaded .details-header .caption {
+  animation: none;
+  background-color: transparent;
+  color: inherit;
+  min-width: unset;
+  min-height: unset;
+}
+
+.container--loaded .details-header .circular {
+  animation: none;
+  background-color: revert;
+  color: revert;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+.container--loaded .details-content-clamp listview {
+  animation: none;
+  background-color: transparent;
+  min-height: unset;
+}
+
+.container--loaded .details-content-clamp flowbox {
+  animation: none;
+  background-color: transparent;
+  min-height: unset;
+}
+
+/* Circular variant for artist avatars */
+.details-header__image--circular {
+  border-radius: 9999px;
+}
+
+/* Skeleton placeholder background for missing images */
+.container.container--loaded .details-header__image-placeholder {
+  background-color: alpha(@card_shade_color, 0.8);
+}
+
+/* Header title */
+.details-header__title {
+  font-weight: bold;
+}
+
+/* Subtitle label in headers */
+.details-header .body {
+  min-height: 24px;
+}
+
+.details-header .body:hover {
+  border-radius: 6px;
+  background-image: image(alpha(currentColor, 0.16));
+}
+
+/* Caption label in headers - matches subtitle height for centering */
+.details-header .caption {
+  min-height: 24px;
+}
+
+/* Shared headerbar transitions */
+headerbar.details__headerbar {
+  background-color: @headerbar_bg_color;
+}
+
+headerbar.flat.details__headerbar windowtitle {
+  opacity: 0;
+}
+
+headerbar.details__headerbar windowtitle {
+  transition: opacity .3s ease;
+  opacity: 1;
+}
+

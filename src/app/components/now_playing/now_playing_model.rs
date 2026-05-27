@@ -12,7 +12,7 @@ use crate::app::state::Device;
 use crate::app::state::{
     PlaybackAction, PlaybackState, SelectionAction, SelectionContext, SelectionState,
 };
-use crate::app::{ActionDispatcher, AppAction, AppEvent, AppModel};
+use crate::app::{ActionDispatcher, AppAction, AppEvent, AppModel, BrowserAction};
 use crate::feature_flags::{self, FeatureFlag};
 
 pub struct NowPlayingModel {
@@ -30,6 +30,62 @@ impl NowPlayingModel {
 
     fn queue(&self) -> impl Deref<Target = PlaybackState> + '_ {
         self.app_model.map_state(|s| &s.playback)
+    }
+
+    pub fn current_song(&self) -> Option<SongDescription> {
+        self.app_model.get_state().playback.current_song()
+    }
+
+    pub fn is_playing(&self) -> bool {
+        self.app_model.get_state().playback.is_playing()
+    }
+
+    pub fn toggle_play(&self) {
+        if self.is_playing() {
+            self.dispatcher.dispatch(PlaybackAction::Pause.into());
+        } else {
+            self.dispatcher.dispatch(PlaybackAction::Play.into());
+        }
+    }
+
+    pub fn toggle_like(&self) {
+        if let Some(song) = self.current_song() {
+            let id = song.id.clone();
+            let api = self.app_model.get_spotify();
+            let is_liked = self.is_current_song_liked();
+
+            if is_liked {
+                self.dispatcher
+                    .call_spotify_and_dispatch(move || async move {
+                        api.remove_saved_tracks(vec![id.clone()]).await?;
+                        Ok(BrowserAction::RemoveSavedTracks(vec![id]).into())
+                    });
+            } else {
+                let song_desc = song.clone();
+                self.dispatcher
+                    .call_spotify_and_dispatch(move || async move {
+                        api.save_tracks(vec![id]).await?;
+                        Ok(BrowserAction::SaveTracks(vec![song_desc]).into())
+                    });
+            }
+        }
+    }
+
+    pub fn is_current_song_liked(&self) -> bool {
+        if let Some(song) = self.current_song() {
+            let state = self.app_model.get_state();
+            if let Some(home) = state.browser.home_state() {
+                return home.saved_tracks.get(&song.id).is_some();
+            }
+        }
+        false
+    }
+
+    pub fn view_album(&self) {
+        if let Some(song) = self.current_song() {
+            self.dispatcher
+                .dispatch(AppAction::ViewAlbum(song.album.id.clone()));
+        }
     }
 
     pub fn load_more(&self) -> Option<()> {
@@ -143,7 +199,7 @@ impl PlaylistModel for NowPlayingModel {
     }
 
     fn enable_selection(&self) -> bool {
-        if !feature_flags::is_enabled(FeatureFlag::NowPlayingSelectMode) {
+        if !feature_flags::is_enabled(FeatureFlag::SelectMode) {
             return false;
         }
         self.dispatcher
@@ -159,7 +215,7 @@ impl PlaylistModel for NowPlayingModel {
 
 impl SimpleHeaderBarModel for NowPlayingModel {
     fn title(&self) -> Option<String> {
-        None
+        Some("Now Playing".to_string())
     }
 
     fn title_updated(&self, _: &AppEvent) -> bool {
@@ -167,7 +223,7 @@ impl SimpleHeaderBarModel for NowPlayingModel {
     }
 
     fn selection_context(&self) -> Option<SelectionContext> {
-        if !feature_flags::is_enabled(FeatureFlag::NowPlayingSelectMode) {
+        if !feature_flags::is_enabled(FeatureFlag::SelectMode) {
             return None;
         }
         Some(self.current_selection_context())

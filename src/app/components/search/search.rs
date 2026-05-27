@@ -4,9 +4,9 @@ use gtk::CompositeTemplate;
 use std::rc::Rc;
 
 use crate::app::components::utils::{wrap_flowbox_item, Debouncer};
-use crate::app::components::{AlbumWidget, ArtistWidget, Component, EventListener};
+use crate::app::components::{CardWidget, Component, EventListener, ImageShape};
 use crate::app::dispatch::Worker;
-use crate::app::models::{AlbumModel, ArtistModel};
+use crate::app::models::CardModel;
 use crate::app::state::{AppEvent, BrowserEvent};
 
 use super::SearchResultsModel;
@@ -113,8 +113,8 @@ impl SearchResultsWidget {
         self.imp()
             .albums_results
             .bind_model(Some(store), move |item| {
-                wrap_flowbox_item(item, |album_model: &AlbumModel| {
-                    AlbumWidget::for_model(album_model, worker.clone())
+                wrap_flowbox_item(item, |model: &CardModel| {
+                    CardWidget::for_model(model, worker.clone(), ImageShape::Square)
                 })
             });
         self.imp()
@@ -122,8 +122,8 @@ impl SearchResultsWidget {
             .connect_child_activated(move |_, child| {
                 let index = child.index() as u32;
                 if let Some(item) = store_clone.item(index) {
-                    if let Some(album_model) = item.downcast_ref::<AlbumModel>() {
-                        on_album_pressed(album_model.uri());
+                    if let Some(model) = item.downcast_ref::<CardModel>() {
+                        on_album_pressed(model.id());
                     }
                 }
             });
@@ -137,8 +137,8 @@ impl SearchResultsWidget {
         self.imp()
             .artist_results
             .bind_model(Some(store), move |item| {
-                wrap_flowbox_item(item, |artist_model: &ArtistModel| {
-                    ArtistWidget::for_model(artist_model, worker.clone())
+                wrap_flowbox_item(item, |model: &CardModel| {
+                    CardWidget::for_model(model, worker.clone(), ImageShape::Round)
                 })
             });
         self.imp()
@@ -146,8 +146,8 @@ impl SearchResultsWidget {
             .connect_child_activated(move |_, child| {
                 let index = child.index() as u32;
                 if let Some(item) = store_clone.item(index) {
-                    if let Some(artist_model) = item.downcast_ref::<ArtistModel>() {
-                        on_artist_pressed(artist_model.id());
+                    if let Some(model) = item.downcast_ref::<CardModel>() {
+                        on_artist_pressed(model.id());
                     }
                 }
             });
@@ -167,8 +167,8 @@ impl SearchResults {
         let model = Rc::new(model);
         let widget = SearchResultsWidget::new();
 
-        let album_results_model = gio::ListStore::new::<AlbumModel>();
-        let artist_results_model = gio::ListStore::new::<ArtistModel>();
+        let album_results_model = gio::ListStore::new::<CardModel>();
+        let artist_results_model = gio::ListStore::new::<CardModel>();
 
         widget.connect_go_back(clone!(
             #[weak]
@@ -223,23 +223,13 @@ impl SearchResults {
         if let Some(results) = self.model.get_album_results() {
             self.album_results_model.remove_all();
             for album in results.iter() {
-                self.album_results_model.append(&AlbumModel::new(
-                    &album.artists_name(),
-                    &album.title,
-                    album.year(),
-                    album.art.as_ref(),
-                    &album.id,
-                ));
+                self.album_results_model.append(&CardModel::from(album));
             }
         }
         if let Some(results) = self.model.get_artist_results() {
             self.artist_results_model.remove_all();
             for artist in results.iter() {
-                self.artist_results_model.append(&ArtistModel::new(
-                    &artist.name,
-                    &artist.photo,
-                    &artist.id,
-                ));
+                self.artist_results_model.append(&CardModel::from(artist));
             }
         }
     }
